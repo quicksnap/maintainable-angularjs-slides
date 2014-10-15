@@ -1,0 +1,380 @@
+doctype html
+html
+  head
+    meta(charset='utf-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1, maximum-scale=1')
+    title Maintainable AngularJS Apps
+
+    // build:css styles/styles.css
+    //- Check out 'src/bower_components/prism/themes/' for available themes
+    link(rel='stylesheet', type='text/css', href='bower_components/prism/themes/prism-tomorrow.css')
+    link(rel='stylesheet', type='text/css', href='styles/main.css')
+    // endbuild
+
+  body
+
+    article
+
+      section
+        h2 Maintainable AngularJS Applications
+        h3 Dan Schuman <br/> Extensis <br/> <a href="mailto:danschuman@gmail.com">dan.schuman@gmail.com</a>
+        br
+        div Slides: <a href="http://github.com/quicksnap/maintainable-angularjs-slides">github.com/quicksnap/maintainable-angularjs-slides</a>
+
+      section
+        h1 The Build
+
+      section
+        h2.bullet Goals Of a Build System
+        ul
+          li.bullet Fast
+          li.bullet Flexible
+          li.bullet We want it to get out of our way as quickly as possible
+
+      section
+        h2 Gulp!
+        img.gulp(src='images/gulp.png')
+
+      section
+        h2.bullet Code instead of Config
+        h2.bullet Streams
+        ul
+          li.bullet No unnecessary file reads -- all in-memory
+          li.bullet Pipes: flexible routing
+          li.bullet Composable: it's just code!
+
+      section
+        pre
+          code.language-javascript.
+            var gulp    = require('gulp');
+            var concat  = require('gulp-concat');
+
+            gulp.task('styles', function() {
+
+              gulp.src('./src/**/*.css')
+                .pipe( concat('styles.css') )
+                .pipe( gulp.dest('dist') );
+
+            });
+
+      section
+        pre(style='font-size:10px;')
+          code.language-javascript.
+            // Add autoprefixer
+            var gulp          = require('gulp');
+            var concat        = require('gulp-concat');
+            var autoprefixer  = require('gulp-autoprefixer');
+
+            gulp.task('styles', function() {
+
+              gulp.src('./src/**/*.css')
+                .pipe( concat('styles.css') )
+                .pipe( autoprefixer('last 1 version', '&gt; 1%', 'ie 9') )
+                .pipe( gulp.dest('dist') );
+            });
+
+
+      section
+        pre(style='font-size:10px;')
+          code.language-javascript.
+            // Switch to SCSS
+            var gulp          = require('gulp');
+            var concat        = require('gulp-concat');
+            var autoprefixer  = require('gulp-autoprefixer');
+            var sass          = require('gulp-sass');
+
+            gulp.task('styles', function() {
+
+              gulp.src('./src/**/*.scss')
+                .pipe( sass() )
+                .pipe( concat('styles.css') )
+                .pipe( autoprefixer('last 1 version', '&gt; 1%', 'ie 9') )
+                .pipe( gulp.dest('dist') );
+
+            });
+
+      section
+        pre(style='font-size:10px;')
+          code.language-javascript.
+            // Source Maps!
+            var gulp          = require('gulp');
+            var concat        = require('gulp-concat');
+            var autoprefixer  = require('gulp-autoprefixer');
+            var sass          = require('gulp-sass');
+            var sourcemaps    = require('gulp-sourcemaps');
+
+            gulp.task('styles', function() {
+
+              gulp.src('./src/**/*.scss')
+                .pipe( sourcemaps.init() )
+                  .pipe( sass() )
+                  .pipe( concat('styles.css') )
+                .pipe( sourcemaps.write() )
+                .pipe( autoprefixer('last 1 version', '&gt; 1%', 'ie 9') )
+                .pipe( gulp.dest('dist') );
+
+              });
+
+      section
+        h2 The Dev Environment
+
+      section
+        h2 Component Structure
+        div Organize by architecture and components, not functionally
+
+      section
+        h2 Functional Organization
+        pre(style='text-align:left;')
+          code.language-markup.
+            app/
+            ├── css/
+            ├── img/
+            └── js/
+                ├── directives/
+                ├── filters/
+                ├── controllers/
+                └── services/
+
+        //- > No more directives/filters/controllers
+        //- > Instead, a recursive component structure
+        //- - Tests alongside implementation files
+        //- - Promotes reusability; easier to extract
+
+      section
+        h2 Fractal Component Organization
+        pre(style='text-align:left;font-size:10px;width:100%')
+          code.language-markup.
+            app/
+            ├── app.js
+            ├── index.html
+            │
+            ├── component-one/
+            │   ├── component-one-controller.js
+            │   ├── component-one-manager.js
+            │   ├── component-one-manager_test.js
+            │   ├── componnet-one.html
+            │   ├── componnet-one.scss
+            │   │
+            │   └── sub-component/
+            │       ├── sub-component-model.js
+            │       ├── sub-component-model_test.js
+            │       ├── sub-component.scss
+            │       └── sub-component.html
+            │  
+            └── component-two/
+                ├── component-two-controller.js
+                ├── component-two-manager.js
+                ├── component-two-manager_test.js
+                ├── componnet-two.scss
+                └── componnet-two.html
+
+      section
+        h2 gulp-ng-html2js
+        pre
+          code.language-javascript.
+            var ngHtml2Js = require("gulp-ng-html2js");
+
+            // ..snip..
+            gulp.src('./src/**/*.html')
+              .pipe(ngHtml2js({
+                moduleName: 'my-templates',
+                stripPrefix: '/src'
+              }) )
+              .pipe( concat('my-templates.js') )
+              .pipe( gulp.dest('./dist') );
+
+      section
+        h2.bullet gulp-inject
+        ul
+          li.bullet Allows you to automate index.html and karam.conf file listings
+          li.bullet No need to add a new script tag for each component
+
+      section
+        pre
+          code.language-javascript.
+            gulp.src('./src/index.html')
+              .pipe( inject(bowerFiles(), {
+                ignorePath: 'bower_components',
+                starttag: '&lt;!-- inject:vendor:{{ext}} --&gt;'
+              }) )
+              .pipe( inject(es.merge( appFiles(), cssFiles() ), {
+                ignorePath: ['src']
+              }) )
+              .pipe( gulp.dest('./dist') )
+
+       section
+            pre(style='font-size:10px;width:100%')
+              code.language-markup.
+                &lt;!DOCTYPE html&gt;
+                &lt;html&gt;
+                &lt;head&gt;
+                  &lt;!-- inject:vendor:css --&gt;
+                  &lt;!-- endinject --&gt;
+                  &lt;!-- inject:css --&gt;
+                  &lt;!-- endinject --&gt;
+                  &lt;!-- inject:mocks:css --&gt;
+                  &lt;!-- endinject --&gt;
+                &lt;/head&gt;
+                &lt;body ng-cloak&gt;
+
+                  &lt;div ui-view&gt;
+                  &lt;/div&gt;
+
+                  &lt;!-- inject:vendor:js --&gt;
+                  &lt;!-- endinject --&gt;
+                  &lt;!-- inject:js --&gt;
+                  &lt;!-- endinject --&gt;
+                  &lt;!-- inject:mocks:js --&gt;
+                  &lt;!-- endinject --&gt;
+                &lt;/body&gt;
+                &lt;/html&gt;
+
+      section
+        h1 Routing
+
+      section
+        h2.bullet Use ui-router!
+        ul
+          li.bullet Rich, flexible API
+          li.bullet Nested views
+          li.bullet Many awesome features
+
+      section
+        h2 Route Organization
+
+      section
+        h2.bullet All routes in one file
+        pre(style='font-size:10px;width:100%')
+          code.language-javascript.
+            angular.module('myApp')
+            .config(function( $stateProvider ) {
+              $stateProvider
+                .state('main', {
+                  url           : '/',
+                  templateUrl   : 'main/main.html',
+                  controller    : 'mainCtrl as m',
+                })
+                .state('contacts', {
+                  url           : '/contacts',
+                  templateUrl   : 'contacts/contacts.html',
+                  controller    : 'contactsCtrl as m'
+                })
+                .state('preferences', {
+                  url           : '/preferences',
+                  templateUrl   : 'preferences/preferences.html',
+                  controller    : 'preferencesCtrl as m'
+                });
+            });
+
+      section
+        h2.bullet Inline routes with controller
+        pre(style='font-size:10px;width:100%')
+          code.language-javascript.
+            angular.module('myApp')
+            .config(function( $stateProvider ) {
+              $stateProvider
+                .state('main', {
+                  url           : '/',
+                  templateUrl   : 'main/main.html',
+                  controller    : 'mainCtrl as m',
+                })
+            })
+            .controller('mainCtrl', function( /*...*/ ) {
+              // ... //
+            });
+
+      section
+        h2 Routes in separate files
+        pre(style='width:100%;text-align:left;')
+          code.language-markup.
+            main/
+            ├── main-route.js
+            ├── main-controller.js
+            └── main.html
+
+      section
+        h1 Controllers
+
+      section
+        h2.bullet Fat Controllers
+        ul
+          li.bullet Holds model state
+          li.bullet Couples logic tightly to controllers
+          li.bullet Makes testing more difficult and brittle
+
+
+      section
+        h2.bullet Restrict controllers to:
+        ul
+          li.bullet Integrating of components
+          li.bullet Exposing models to the view
+          li.bullet Presentation-only logic
+
+      section
+        pre(style='font-size:10px;width:100%')
+          code.language-javascript.
+            angular.module('myApp')
+            .config(function( $stateProvider, preferencesManager ) {
+              $stateProvider
+                .state('preferences', {
+                  url          : '/preferences',
+                  templateUrl  : 'preferences/preferences.html',
+                  controller   : 'preferencesCtrl as m',
+                  resolve      : {
+                    _preferences: function() {
+                      return preferencesManager.init(); // returns a promise
+                    }
+                  }
+                });
+            })
+            .controller('preferencesCtrl', function( preferencesManager, $modal ) {
+              this.preferences = preferencesManager.publicData;
+              // { userInfo: {...}, emailSubscribe: true, isEdited: false }
+
+              this.resetPreferences = function() { preferencesManager.reset();  };
+              this.submitChanges    = function() { preferencesManager.submit(); };
+              this.editAvatar       = function() {
+                var modal = $modal.open({
+                  templateUrl  : 'avatar-modal.html',
+                  controller   : 'editAvatarCtrl as m',
+                  preferences  : preferencesManager.publicData
+                });
+              };
+            });
+
+      section
+        h2.bullet Benefits
+        div.bullet Services/Factories solely maintain model state
+        div.bullet State changes on exposed data are reflected in view
+        div.bullet Changes in view implicitly update exposed model
+        div.bullet No $scope.$watch in controller
+
+        br
+
+        h2.bullet Drawbacks
+        div.bullet Model layer must not overwrite object references
+        div.bullet Can lead to service bloat
+
+      section
+        h2.bullet Recap
+        ul
+          li.bullet Gulp for flexible and fast builds
+          li.bullet Component organization to match your application structure
+          li.bullet Thin controllers lessen to coupling and increase testability
+
+      section
+        h2 Thanks!
+
+    // build:js scripts/scripts.js
+    script(src='bower_components/bespoke.js/dist/bespoke.min.js')
+    script(src='bower_components/bespoke-keys/dist/bespoke-keys.min.js')
+    script(src='bower_components/bespoke-touch/dist/bespoke-touch.min.js')
+    script(src='bower_components/bespoke-bullets/dist/bespoke-bullets.min.js')
+    //- script(src='bower_components/bespoke-scale/dist/bespoke-scale.min.js')
+    //- script(src='bower_components/bespoke-hash/dist/bespoke-hash.min.js')
+    //- script(src='bower_components/bespoke-progress/dist/bespoke-progress.min.js')
+    script(src='bower_components/bespoke-state/dist/bespoke-state.min.js')
+    script(src='bower_components/bespoke-forms/dist/bespoke-forms.min.js')
+    script(src='bower_components/prism/prism.js')
+    script(src='scripts/main.js')
+    // endbuild
